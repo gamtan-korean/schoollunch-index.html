@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>급식 알리미</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        input[type="date"], input[type="text"], textarea {
+            padding: 8px;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .menu, .recommendations, .evaluations, .votes, .stats {
+            margin-top: 20px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background-color: #f9f9f9;
+            margin: 5px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>급식 알리미</h1>
+        <label for="date">날짜를 선택하세요:</label>
+        <input type="date" id="date">
+        <button onclick="showMenu()">급식 조회</button>
+        <div class="menu" id="menu"></div>
+    </div>
+
+    <div class="container">
+        <h1>급식 메뉴 추천</h1>
+        <label for="recommendDate">날짜를 선택하세요:</label>
+        <input type="date" id="recommendDate">
+        <input type="text" id="recommendation" placeholder="추천 메뉴를 입력하세요">
+        <button onclick="submitRecommendation()">추천하기</button>
+        <div class="recommendations" id="recommendations"></div>
+    </div>
+
+    <div class="container">
+        <h1>급식 평가</h1>
+        <label for="evaluateDate">날짜를 선택하세요:</label>
+        <input type="date" id="evaluateDate">
+        <textarea id="evaluation" placeholder="평가를 입력하세요" rows="4" cols="50"></textarea>
+        <button onclick="submitEvaluation()">평가하기</button>
+        <div class="evaluations" id="evaluations"></div>
+    </div>
+
+    <div class="container">
+        <h1>인기 메뉴 투표</h1>
+        <label for="voteDate">날짜를 선택하세요:</label>
+        <input type="date" id="voteDate">
+        <input type="text" id="vote" placeholder="좋아하는 메뉴를 입력하세요">
+        <button onclick="submitVote()">투표하기</button>
+        <div class="votes" id="votes"></div>
+    </div>
+
+    <div class="container">
+        <h1>통계 보기</h1>
+        <button onclick="showStats()">통계 보기</button>
+        <div class="stats" id="stats"></div>
+    </div>
+
+    <script>
+        const mealData = {
+            "2024-07-08": ["찹쌀밥", "소고기미역국", "주꾸미&돼지고기볶음", "콩나물부추무침(자율)", "배추김치(자율)", "초코케이크"],
+            "2024-07-09": ["흑미밥", "돼지등뼈감자탕", "유린기&6마리통새우", "새송이버섯메추리알장조리(자율)", "배추김치(자율)", "과일(자율)"],
+            "2024-07-10": ["치킨마요덮밥", "참치김치찌개", "트리플치즈크러스트피자&메이플시럽", "오이부추무침", "양념깻잎", "초코우유"],
+            "2024-07-11": ["기장밥", "냉도토리묵국", "지고기스테이크&구운채소", "청경채표고버섯볶음(자율)", "총각김치(자율)", "과일(자율)"],
+            "2024-07-12": ["찰보리밥", "소고기된장찌개", "군만두&실곤약무침", "감자채햄볶음(자율)", "깍두기(자율)", "비타500 젤리"],
+            "2024-07-13": ["토요일로 급식이 없습니다."],
+            "2024-07-14": ["일요일로 급식이 없습니다."],
+            // 추가적인 날짜와 메뉴 정보를 여기에 작성하세요.
+        };
+
+        const recommendations = {};
+        const evaluations = {};
+        const votes = {};
+
+        function showMenu() {
+            const date = document.getElementById('date').value;
+            const menuDiv = document.getElementById('menu');
+            if (mealData[date]) {
+                const menuItems = mealData[date].map(item => `<li>${item}</li>`).join('');
+                menuDiv.innerHTML = `<h3>${date}의 급식 메뉴:</h3><ul>${menuItems}</ul>`;
+                showRecommendations(date);
+                showEvaluations(date);
+                showVotes(date);
+            } else {
+                menuDiv.innerHTML = `<p>선택한 날짜의 급식 메뉴가 없습니다.</p>`;
+            }
+        }
+
+        function showRecommendations(date) {
+            const recommendationsDiv = document.getElementById('recommendations');
+            if (recommendations[date]) {
+                const recommendationItems = recommendations[date].map(item => `<li>${item}</li>`).join('');
+                recommendationsDiv.innerHTML = `<h3>${date}의 추천 메뉴:</h3><ul>${recommendationItems}</ul>`;
+            } else {
+                recommendationsDiv.innerHTML = `<p>추천된 메뉴가 없습니다.</p>`;
+            }
+        }
+
+        function submitRecommendation() {
+            const date = document.getElementById('recommendDate').value;
+            const recommendation = document.getElementById('recommendation').value;
+
+            if (!date || !recommendation) {
+                alert("날짜와 추천 메뉴를 입력하세요.");
+                return;
+            }
+
+            if (!recommendations[date]) {
+                recommendations[date] = [];
+            }
+            recommendations[date].push(recommendation);
+
+            showRecommendations(date);
+            document.getElementById('recommendation').value = '';
+        }
+
+        function showEvaluations(date) {
+            const evaluationsDiv = document.getElementById('evaluations');
+            if (evaluations[date]) {
+                const evaluationItems = evaluations[date].map(item => `<li>${item}</li>`).join('');
+                evaluationsDiv.innerHTML = `<h3>${date}의 급식 평가:</h3><ul>${evaluationItems}</ul>`;
+            } else {
+                evaluationsDiv.innerHTML = `<p>평가된 내용이 없습니다.</p>`;
+            }
+        }
+
+        function submitEvaluation() {
+            const date = document.getElementById('evaluateDate').value;
+            const evaluation = document.getElementById('evaluation').value;
+
+            if (!date || !evaluation) {
+                alert("날짜와 평가 내용을 입력하세요.");
+                return;
+            }
+
+            if (!evaluations[date]) {
+                evaluations[date] = [];
+            }
+            evaluations[date].push(evaluation);
+
+            showEvaluations(date);
+            document.getElementById('evaluation').value = '';
+        }
+
+        function showVotes(date) {
+            const votesDiv = document.getElementById('votes');
+            if (votes[date]) {
+                const voteItems = Object.entries(votes[date])
+                    .map(([menu, count]) => `<li>${menu}: ${count}표</li>`)
+                    .join('');
+                votesDiv.innerHTML = `<h3>${date}의 인기 메뉴 투표:</h3><ul>${voteItems}</ul>`;
+            } else {
+                votesDiv.innerHTML = `<p>투표된 메뉴가 없습니다.</p>`;
+            }
+        }
+
+        function submitVote() {
+            const date = document.getElementById('voteDate').value;
+            const vote = document.getElementById('vote').value;
+
+            if (!date || !vote) {
+                alert("날짜와 좋아하는 메뉴를 입력하세요.");
+                return;
+            }
+
+            if (!votes[date]) {
+                votes[date] = {};
+            }
+            if (!votes[date][vote]) {
+                votes[date][vote] = 0;
+            }
+            votes[date][vote]++;
+
+            showVotes(date);
+            document.getElementById('vote').value = '';
+        }
+
+        function showStats() {
+            const statsDiv = document.getElementById('stats');
+            const totalVotes = Object.values(votes).reduce((total, dailyVotes) => {
+                return total + Object.values(dailyVotes).reduce((dayTotal, count) => dayTotal + count, 0);
+            }, 0);
+
+            const menuVotes = {};
+            for (const dailyVotes of Object.values(votes)) {
+                for (const [menu, count] of Object.entries(dailyVotes)) {
+                    if (!menuVotes[menu]) {
+                        menuVotes[menu] = 0;
+                    }
+                    menuVotes[menu] += count;
+                }
+            }
+
+            const sortedMenuVotes = Object.entries(menuVotes).sort((a, b) => b[1] - a[1]);
+            const voteItems = sortedMenuVotes.map(([menu, count]) => `<li>${menu}: ${count}표</li>`).join('');
+
+            statsDiv.innerHTML = `
+                <h3>전체 투표 통계:</h3>
+                <p>총 투표수: ${totalVotes}</p>
+                <h3>메뉴별 투표 결과:</h3>
+                <ul>${voteItems}</ul>
+            `;
+        }
+    </script>
+</body>
+</html>
